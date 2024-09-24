@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cubo 3D de Partículas con Filtro y Modulación por Velocidad</title>
+    <title>Cubo 3D de Partículas con Filtro y Disminución de Partículas</title>
     <style>
         body, html {
             margin: 0;
@@ -31,6 +31,8 @@
         let prevMouseY = 0;
         let speed = 0;
         let wetness = 0.5;  // Valor inicial del filtro de convolución
+        let zTranslation = 0; // Variable para manejar la traslación en el eje Z
+        let particleCount = 222; // Cantidad de partículas inicial
 
         function preload() {
             convolutionReverb = new p5.Convolver('https://p5js.org/assets/sound/examples/convolution-reverb/ir_latenightlong.wav');
@@ -46,7 +48,7 @@
             }
 
             // Crear partículas dentro del cubo
-            for (let i = 0; i < 222; i++) {
+            for (let i = 0; i < particleCount; i++) {
                 let particle = new Particle();
                 particles.push(particle);
 
@@ -73,7 +75,7 @@
         function draw() {
             if (!audioStarted) return;
 
-            background(0);
+            background(10);
 
             // Calcular la velocidad del puntero/mouse
             speed = dist(mouseX, mouseY, prevMouseX, prevMouseY) * 0.01;
@@ -86,11 +88,12 @@
             rotationXValue = deltaY;
             rotationYValue = deltaX;
 
+            translate(0, 0, zTranslation); // Mover el cubo en el eje Z según la tecla de flecha
             rotateX(rotationXValue);
             rotateY(rotationYValue);
 
             // Dibujar partículas
-            for (let i = 0; i < particles.length; i++) {
+            for (let i = 0; i < particleCount; i++) {
                 let p = particles[i];
                 p.move();
                 p.show();
@@ -108,7 +111,7 @@
                 }
 
                 // Conectar partículas con líneas delgadas
-                for (let j = i + 1; j < particles.length; j++) {
+                for (let j = i + 1; j < particleCount; j++) {
                     let d = dist(p.pos.x, p.pos.y, p.pos.z, particles[j].pos.x, particles[j].pos.y, particles[j].pos.z);
                     if (d < 60) {  // Solo conectar partículas cercanas
                         stroke(255, 60);  // Líneas muy delgadas y transparentes
@@ -128,18 +131,18 @@
         }
 
         function keyPressed() {
-            // Aumentar el valor de wetness con la flecha hacia arriba
+            // Aumentar la traslación en eje Z y disminuir partículas con la flecha hacia arriba
             if (keyCode === UP_ARROW) {
-                wetness = constrain(wetness + 0.1, 0, 1);
-                convolutionReverb.drywet(wetness);
-                console.log("Wetness: ", wetness);
+                zTranslation -= 50; // Alejar el cubo en el eje Z
+                particleCount = max(10, particleCount - 10); // Reducir el número de partículas
+                console.log("zTranslation: ", zTranslation, " | particleCount: ", particleCount);
             }
 
-            // Disminuir el valor de wetness con la flecha hacia abajo
+            // Disminuir la traslación en eje Z y aumentar partículas con la flecha hacia abajo
             if (keyCode === DOWN_ARROW) {
-                wetness = constrain(wetness - 0.1, 0, 1);
-                convolutionReverb.drywet(wetness);
-                console.log("Wetness: ", wetness);
+                zTranslation += 50; // Acercar el cubo en el eje Z
+                particleCount = min(particles.length, particleCount + 10); // Aumentar el número de partículas
+                console.log("zTranslation: ", zTranslation, " | particleCount: ", particleCount);
             }
         }
 
@@ -184,8 +187,8 @@
 
                 // Si está destacada, cambiar el color y tamaño
                 if (this.isHighlighted) {
-                    stroke(255, 255, 180);
-                    strokeWeight(2.5);
+                    stroke(255, 255, 200);
+                    strokeWeight(2);
                     this.isHighlighted = false;  // Restablecer el estado de destacado
                 } else {
                     stroke(255);
@@ -203,4 +206,5 @@
     </script>
 </body>
 </html>
+
 
