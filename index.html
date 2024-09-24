@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cubo 3D de Partículas con Filtro y Modulación por Velocidad</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: rgb(255, 255, 255);
+            cursor: none;  /* Ocultar el cursor del mouse */
+        }
+    </style>
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
+    <script>
+        let particles = [];
+        let cubeSize = 400;
+        let audioStarted = false;
+        let particleOscillators = [];
+        let convolutionReverb;
+        let lastSoundTime = 0;
+        let soundInterval = 0.5;
+        let rotationXValue = 0;
+        let rotationYValue = 0;
+        let prevMouseX = 0;
+        let prevMouseY = 0;
+        let speed = 0;
+        let wetness = 0.5;  // Valor inicial del filtro de convolución
+
+        function preload() {
+            convolutionReverb = new p5.Convolver('https://p5js.org/assets/sound/examples/convolution-reverb/ir_latenightlong.wav');
+        }
+
+        function setup() {
+            createCanvas(windowWidth, windowHeight, WEBGL);
+            noStroke();
+
+            // Crear partículas dentro del cubo
+            for (let i = 0; i < 222; i++) {
+                let particle = new Particle();
+                particles.push(particle);
+
+                if (i < 222) {
+                    // Crear un oscilador para las partículas
+                    let osc = new p5.Oscillator('sine');
+                    osc.freq(random(100, 12000));  // Frecuencia inicial aleatoria
+                    osc.amp(0);  // Comienza en silencio
+                    osc.start();
+
+                    // Conectar el oscilador al filtro de convolución
+                    osc.disconnect();
+                    osc.connect(convolutionReverb);
+
+                    particleOscillators.push(osc);
+                }
+            }
+
+            convolutionReverb.drywet(wetness);  // Aplicar el valor inicial de wetness
+            background(0);
+            noLoop();  // Esperar a que se inicie el audio
+        }
+
+        function draw() {
+            if (!audioStarted) return;
+
+            background(0);
+
+            // Calcular la velocidad del puntero/mouse
+            speed = dist(mouseX, mouseY, prevMouseX, prevMouseY) * 0.01;
+            prevMouseX = mouseX;
+            prevMouseY = mouseY;
+
+            // Aplicar la rotación en función del puntero del mouse o touch
+            let deltaX = (mouseX - width / 2) * 0.01;
+            let deltaY = (mouseY - height / 2) * 0.01;
+            rotationXValue = deltaY;
+            rotationYValue = deltaX;
+
+            rotateX(rotationXValue);
+            rotateY(rotationYValue);
+
+            // Dibujar partículas
+            for (let i = 0; i < particles.length; i++) {
+                let p = particles[i];
+                p.move();
+                p.show();
+
+                if (i < 50 && millis() - lastSoundTime > soundInterval) {
+                    // Modulación de frecuencia de acuerdo a la velocidad de rotación
+                    let osc = particleOscillators[i];
+                    osc.freq(random(100, 12000) + speed * 5000);  // Modulación de frecuencia con la velocidad
+                    osc.pan(map(p.pos.x, -cubeSize / 4, cubeSize / 4, -2, 2)); // Posicionar espacialmente el sonido
+                    osc.amp(0.3, 0.001);  // Fade-in rápido con volumen más seco
+                    setTimeout(() => osc.amp(0, 0.1), random(10, 5));  // Fade-out rápido
+
+                    p.highlight();  // Destacar la partícula que genera el sonido
+                    lastSoundTime = millis();  // Actualizar el tiempo de la última emisión de sonido
+                }
+
+                // Conectar partículas con líneas delgadas
+                for (let j = i + 1; j < particles.length; j++) {
+                    let d = dist(p.pos.x, p.pos.y, p.pos.z, particles[j].pos.x, particles[j].pos.y, particles[j].pos.z);
+                    if (d < 60) {  // Solo conectar partículas cercanas
+                        stroke(255, 60);  // Líneas muy delgadas y transparentes
+                        strokeWeight(0.2);
+                        line(p.pos.x, p.pos.y, p.pos.z, particles[j].pos.x, particles[j].pos.y, particles[j].pos.z);
+                    }
+                }
+            }
+
+            // Dibujar un punto negro en lugar del puntero del mouse
+            push();
+            fill(0);
+            noStroke();
+            translate(mouseX - width / 2, mouseY - height / 2, 50);  // Posicionar el punto negro
+            sphere(5);  // Dibujar una esfera pequeña como el punto negro
+            pop();
+        }
+
+        function keyPressed() {
+            // Aumentar el valor de wetness con la flecha hacia arriba
+            if (keyCode === UP_ARROW) {
+                wetness = constrain(wetness + 0.1, 0, 1);
+                convolutionReverb.drywet(wetness);
+                console.log("Wetness: ", wetness);
+            }
+
+            // Disminuir el valor de wetness con la flecha hacia abajo
+            if (keyCode === DOWN_ARROW) {
+                wetness = constrain(wetness - 0.1, 0, 1);
+                convolutionReverb.drywet(wetness);
+                console.log("Wetness: ", wetness);
+            }
+        }
+
+        function mousePressed() {
+            if (!audioStarted) {
+                userStartAudio();
+                audioStarted = true;
+                loop();  // Iniciar animación y sonido
+            }
+        }
+
+        class Particle {
+            constructor() {
+                this.pos = createVector(
+                    random(-cubeSize / 2, cubeSize / 2),
+                    random(-cubeSize / 2, cubeSize / 2),
+                    random(-cubeSize / 2, cubeSize / 2)
+                );
+                this.vel = p5.Vector.random3D().mult(0.09);
+                this.acc = createVector();
+                this.isHighlighted = false;  // Estado para ver si la partícula está destacada
+            }
+
+            move() {
+                this.acc = p5.Vector.random3D().mult(0.8);
+                this.vel.add(this.acc);
+                this.pos.add(this.vel);
+
+                // Asegurarse de que las partículas se mantengan dentro del cubo
+                if (this.pos.x > cubeSize / 2 || this.pos.x < -cubeSize / 2) this.vel.x *= -1;
+                if (this.pos.y > cubeSize / 2 || this.pos.y < -cubeSize / 2) this.vel.y *= -1;
+                if (this.pos.z > cubeSize / 2 || this.pos.z < -cubeSize / 2) this.vel.z *= -1;
+            }
+
+            show() {
+                push();
+                translate(this.pos.x, this.pos.y, this.pos.z);
+
+                // Si está destacada, cambiar el color y tamaño
+                if (this.isHighlighted) {
+                    stroke(255, 255, 180);
+                    strokeWeight(3.5);
+                    this.isHighlighted = false;  // Restablecer el estado de destacado
+                } else {
+                    stroke(255);
+                    strokeWeight(0.5);  // Partículas más pequeñas por defecto
+                }
+
+                point(0, 0);
+                pop();
+            }
+
+            highlight() {
+                this.isHighlighted = true;  // Destacar esta partícula
+            }
+        }
+    </script>
+</body>
+</html>
