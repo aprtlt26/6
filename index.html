@@ -30,9 +30,9 @@
         let prevMouseX = 0;
         let prevMouseY = 0;
         let speed = 0;
-        let wetness = 0.5;  // Valor inicial del filtro de convolución
+        let wetness = 0.3;  // Valor inicial del filtro de convolución
         let zTranslation = 0; // Variable para manejar la traslación en el eje Z
-        let particleCount = 222; // Cantidad de partículas inicial
+        let particleCount = 120; // Cantidad de partículas inicial
 
         function preload() {
             convolutionReverb = new p5.Convolver('https://p5js.org/assets/sound/examples/convolution-reverb/ir_latenightlong.wav');
@@ -52,7 +52,7 @@
                 let particle = new Particle();
                 particles.push(particle);
 
-                if (i < 222) {
+                if (i < 200) {
                     // Crear un oscilador para las partículas
                     let osc = new p5.Oscillator('sine');
                     osc.freq(random(100, 12000));  // Frecuencia inicial aleatoria
@@ -75,7 +75,7 @@
         function draw() {
             if (!audioStarted) return;
 
-            background(10);
+            background(0);
 
             // Calcular la velocidad del puntero/mouse
             speed = dist(mouseX, mouseY, prevMouseX, prevMouseY) * 0.01;
@@ -103,7 +103,7 @@
                     let osc = particleOscillators[i];
                     osc.freq(random(100, 12000) + speed * 5000);  // Modulación de frecuencia con la velocidad
                     osc.pan(map(p.pos.x, -cubeSize / 4, cubeSize / 4, -2, 2)); // Posicionar espacialmente el sonido
-                    osc.amp(0.3, 0.001);  // Fade-in rápido con volumen más seco
+                    osc.amp(0.1, 0.001);  // Fade-in rápido con volumen más seco
                     setTimeout(() => osc.amp(0, 0.1), random(10, 5));  // Fade-out rápido
 
                     p.highlight();  // Destacar la partícula que genera el sonido
@@ -206,5 +206,6 @@
     </script>
 </body>
 </html>
+
 
 
