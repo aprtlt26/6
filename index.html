@@ -10,6 +10,7 @@
             overflow: hidden;
             background: rgb(255, 255, 255);
             cursor: none;  /* Ocultar el cursor del mouse */
+            touch-action: none; /* Prevenir el desplazamiento en móviles */
         }
     </style>
 </head>
@@ -38,6 +39,11 @@
         function setup() {
             createCanvas(windowWidth, windowHeight, WEBGL);
             noStroke();
+
+            // Aumentar el tamaño del cubo en móviles
+            if (windowWidth < 600) {
+                cubeSize = 800;  // Aumentar el tamaño del cubo en pantallas móviles
+            }
 
             // Crear partículas dentro del cubo
             for (let i = 0; i < 222; i++) {
@@ -145,6 +151,10 @@
             }
         }
 
+        function windowResized() {
+            resizeCanvas(windowWidth, windowHeight);  // Redimensionar el canvas al cambiar el tamaño de la ventana
+        }
+
         class Particle {
             constructor() {
                 this.pos = createVector(
@@ -158,7 +168,7 @@
             }
 
             move() {
-                this.acc = p5.Vector.random3D().mult(0.8);
+                this.acc = p5.Vector.random3D().mult(0.9);
                 this.vel.add(this.acc);
                 this.pos.add(this.vel);
 
@@ -175,7 +185,7 @@
                 // Si está destacada, cambiar el color y tamaño
                 if (this.isHighlighted) {
                     stroke(255, 255, 180);
-                    strokeWeight(3.5);
+                    strokeWeight(2.5);
                     this.isHighlighted = false;  // Restablecer el estado de destacado
                 } else {
                     stroke(255);
@@ -193,3 +203,4 @@
     </script>
 </body>
 </html>
+
