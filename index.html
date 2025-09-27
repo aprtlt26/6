@@ -9,8 +9,8 @@
             padding: 0;
             overflow: hidden;
             background: rgb(255, 255, 255);
-            cursor: none;  /* Ocultar el cursor del mouse */
-            touch-action: none; /* Prevenir el desplazamiento en móviles */
+            cursor: none;
+            touch-action: none;
         }
     </style>
 </head>
@@ -30,9 +30,9 @@
         let prevMouseX = 0;
         let prevMouseY = 0;
         let speed = 0;
-        let wetness = 0.3;  // Valor inicial del filtro de convolución
-        let zTranslation = 0; // Variable para manejar la traslación en el eje Z
-        let particleCount = 150; // Cantidad de partículas inicial
+        let wetness = 0.3;  
+        let zTranslation = 0; 
+        let particleCount = 150; 
 
         function preload() {
             convolutionReverb = new p5.Convolver('https://p5js.org/assets/sound/examples/convolution-reverb/ir_latenightlong.wav');
@@ -42,9 +42,8 @@
             createCanvas(windowWidth, windowHeight, WEBGL);
             noStroke();
 
-            // Aumentar el tamaño del cubo en móviles
             if (windowWidth < 600) {
-                cubeSize = 800;  // Aumentar el tamaño del cubo en pantallas móviles
+                cubeSize = 800;  
             }
 
             // Crear partículas dentro del cubo
@@ -53,13 +52,12 @@
                 particles.push(particle);
 
                 if (i < 200) {
-                    // Crear un oscilador para las partículas
+               
                     let osc = new p5.Oscillator('sine');
-                    osc.freq(random(100, 12000));  // Frecuencia inicial aleatoria
-                    osc.amp(0);  // Comienza en silencio
+                    osc.freq(random(100, 12000));  
+                    osc.amp(0);  
                     osc.start();
 
-                    // Conectar el oscilador al filtro de convolución
                     osc.disconnect();
                     osc.connect(convolutionReverb);
 
@@ -67,9 +65,9 @@
                 }
             }
 
-            convolutionReverb.drywet(wetness);  // Aplicar el valor inicial de wetness
+            convolutionReverb.drywet(wetness);  
             background(0);
-            noLoop();  // Esperar a que se inicie el audio
+            noLoop();  
         }
 
         function draw() {
@@ -77,71 +75,63 @@
 
             background(0);
 
-            // Calcular la velocidad del puntero/mouse
             speed = dist(mouseX, mouseY, prevMouseX, prevMouseY) * 0.01;
             prevMouseX = mouseX;
             prevMouseY = mouseY;
 
-            // Aplicar la rotación en función del puntero del mouse o touch
             let deltaX = (mouseX - width / 2) * 0.01;
             let deltaY = (mouseY - height / 2) * 0.01;
             rotationXValue = deltaY;
             rotationYValue = deltaX;
 
-            translate(0, 0, zTranslation); // Mover el cubo en el eje Z según la tecla de flecha
+            translate(0, 0, zTranslation); 
             rotateX(rotationXValue);
             rotateY(rotationYValue);
 
-            // Dibujar partículas
             for (let i = 0; i < particleCount; i++) {
                 let p = particles[i];
                 p.move();
                 p.show();
 
                 if (i < 50 && millis() - lastSoundTime > soundInterval) {
-                    // Modulación de frecuencia de acuerdo a la velocidad de rotación
                     let osc = particleOscillators[i];
-                    osc.freq(random(100, 12000) + speed * 5000);  // Modulación de frecuencia con la velocidad
-                    osc.pan(map(p.pos.x, -cubeSize / 4, cubeSize / 4, -2, 2)); // Posicionar espacialmente el sonido
-                    osc.amp(0.1, 0.001);  // Fade-in rápido con volumen más seco
-                    setTimeout(() => osc.amp(0, 0.1), random(10, 5));  // Fade-out rápido
+                    osc.freq(random(100, 12000) + speed * 5000);  
+                    osc.pan(map(p.pos.x, -cubeSize / 4, cubeSize / 4, -2, 2)); 
+                    osc.amp(0.1, 0.001); 
+                    setTimeout(() => osc.amp(0, 0.1), random(10, 5)); 
 
-                    p.highlight();  // Destacar la partícula que genera el sonido
-                    lastSoundTime = millis();  // Actualizar el tiempo de la última emisión de sonido
+                    p.highlight();  
+                    lastSoundTime = millis();  
                 }
 
-                // Conectar partículas con líneas delgadas
                 for (let j = i + 1; j < particleCount; j++) {
                     let d = dist(p.pos.x, p.pos.y, p.pos.z, particles[j].pos.x, particles[j].pos.y, particles[j].pos.z);
-                    if (d < 60) {  // Solo conectar partículas cercanas
-                        stroke(255, 60);  // Líneas muy delgadas y transparentes
+                    if (d < 60) {  
+                        stroke(255, 60);  
                         strokeWeight(0.2);
                         line(p.pos.x, p.pos.y, p.pos.z, particles[j].pos.x, particles[j].pos.y, particles[j].pos.z);
                     }
                 }
             }
 
-            // Dibujar un punto negro en lugar del puntero del mouse
             push();
             fill(0);
             noStroke();
-            translate(mouseX - width / 2, mouseY - height / 2, 50);  // Posicionar el punto negro
-            sphere(5);  // Dibujar una esfera pequeña como el punto negro
+            translate(mouseX - width / 2, mouseY - height / 2, 50);  
+            sphere(5);  
             pop();
         }
 
         function keyPressed() {
-            // Aumentar la traslación en eje Z y disminuir partículas con la flecha hacia arriba
             if (keyCode === UP_ARROW) {
-                zTranslation -= 50; // Alejar el cubo en el eje Z
-                particleCount = max(10, particleCount - 10); // Reducir el número de partículas
+                zTranslation -= 50; 
+                particleCount = max(10, particleCount - 10); 
                 console.log("zTranslation: ", zTranslation, " | particleCount: ", particleCount);
             }
 
-            // Disminuir la traslación en eje Z y aumentar partículas con la flecha hacia abajo
             if (keyCode === DOWN_ARROW) {
-                zTranslation += 50; // Acercar el cubo en el eje Z
-                particleCount = min(particles.length, particleCount + 10); // Aumentar el número de partículas
+                zTranslation += 50; 
+                particleCount = min(particles.length, particleCount + 10); 
                 console.log("zTranslation: ", zTranslation, " | particleCount: ", particleCount);
             }
         }
@@ -150,12 +140,12 @@
             if (!audioStarted) {
                 userStartAudio();
                 audioStarted = true;
-                loop();  // Iniciar animación y sonido
+                loop(); 
             }
         }
 
         function windowResized() {
-            resizeCanvas(windowWidth, windowHeight);  // Redimensionar el canvas al cambiar el tamaño de la ventana
+            resizeCanvas(windowWidth, windowHeight); 
         }
 
         class Particle {
@@ -167,7 +157,7 @@
                 );
                 this.vel = p5.Vector.random3D().mult(0.09);
                 this.acc = createVector();
-                this.isHighlighted = false;  // Estado para ver si la partícula está destacada
+                this.isHighlighted = false; 
             }
 
             move() {
@@ -175,7 +165,6 @@
                 this.vel.add(this.acc);
                 this.pos.add(this.vel);
 
-                // Asegurarse de que las partículas se mantengan dentro del cubo
                 if (this.pos.x > cubeSize / 2 || this.pos.x < -cubeSize / 2) this.vel.x *= -1;
                 if (this.pos.y > cubeSize / 2 || this.pos.y < -cubeSize / 2) this.vel.y *= -1;
                 if (this.pos.z > cubeSize / 2 || this.pos.z < -cubeSize / 2) this.vel.z *= -1;
@@ -185,14 +174,13 @@
                 push();
                 translate(this.pos.x, this.pos.y, this.pos.z);
 
-                // Si está destacada, cambiar el color y tamaño
                 if (this.isHighlighted) {
                     stroke(255, 255, 200);
                     strokeWeight(2);
-                    this.isHighlighted = false;  // Restablecer el estado de destacado
+                    this.isHighlighted = false;  
                 } else {
                     stroke(255);
-                    strokeWeight(0.5);  // Partículas más pequeñas por defecto
+                    strokeWeight(0.5);  
                 }
 
                 point(0, 0);
@@ -200,12 +188,124 @@
             }
 
             highlight() {
-                this.isHighlighted = true;  // Destacar esta partícula
+                this.isHighlighted = true;  
             }
         }
+
+let video;
+let hands;
+let handDetected = false;
+let pinchDistance = 0;
+
+async function initHandTracking(stream) {
+    video = createCapture(VIDEO);
+    video.size(640, 480);
+    video.hide();
+
+    hands = new Hands({
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+    });
+
+    hands.setOptions({
+        maxNumHands: 1,
+        modelComplexity: 1,
+        minDetectionConfidence: 0.7,
+        minTrackingConfidence: 0.7
+    });
+
+    hands.onResults(onHandResults);
+
+    const camera = new Camera(video.elt, {
+        onFrame: async () => {
+            await hands.send({ image: video.elt });
+        },
+        width: 640,
+        height: 480
+    });
+    camera.start();
+}
+let prevAvgX = null;
+let prevAvgY = null;
+
+function onHandResults(results) {
+  handDetected = results.multiHandLandmarks && results.multiHandLandmarks.length > 0;
+
+  if (handDetected) {
+    let landmarks = results.multiHandLandmarks[0];
+
+    let avgX = 0, avgY = 0;
+    for (let lm of landmarks) {
+      avgX += lm.x;
+      avgY += lm.y;
+    }
+    avgX /= landmarks.length;
+    avgY /= landmarks.length;
+
+    if (prevAvgX !== null && prevAvgY !== null) {
+      let deltaX = avgX - prevAvgX;
+      let deltaY = avgY - prevAvgY;
+
+      rotationYValue += deltaX * 15; // izquierda-derecha
+      rotationXValue -= deltaY * 15; // arriba-abajo
+    }
+    prevAvgX = avgX;
+    prevAvgY = avgY;
+
+    // --- 2. Giro de muñeca → rotación Z ---
+    // Calculamos el ángulo entre índice (8) y meñique (20)
+    let index = landmarks[8];
+    let pinky = landmarks[20];
+    let angle = atan2(pinky.y - index.y, pinky.x - index.x);
+
+    // Ajustar sensibilidad de rotación Z
+    rotationZValue = angle * 2.5;
+
+    // --- 3. Pinza → Zoom y control de partículas ---
+    let thumb = landmarks[4];
+    let pinchDistance = dist(thumb.x, thumb.y, index.x, index.y);
+
+    // Zoom Z
+    zTranslation = map(pinchDistance, 0.02, 0.25, 500, -500, true);
+
+    // Partículas (reducción rápida tipo tecla ↑)
+    let mappedCount = int(map(pinchDistance, 0.02, 0.25, particles.length, 20, true));
+    let diff = mappedCount - particleCount;
+    particleCount += diff * 0.6; // sensibilidad de reacción de partículas
+    particleCount = constrain(particleCount, 10, particles.length);
+  } else {
+    prevAvgX = null;
+    prevAvgY = null;
+  }
+}
+
+
+
+
+// 🚀 Pedir permiso de cámara al cargar la página
+navigator.mediaDevices.getUserMedia({ video: true })
+  .then(stream => {
+      console.log("✅ Cámara habilitada");
+      initHandTracking(stream);
+  })
+  .catch(err => {
+      console.error("❌ Acceso a cámara denegado:", err);
+  });
+
+
+
     </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+
 </body>
 </html>
+
+
+
+
+
 
 
 
