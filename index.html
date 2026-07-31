@@ -94,24 +94,21 @@
                 p.move();
                 p.show();
 
-                // BINAURAL REAL - pan estéreo
                 if (i < 50 && millis() - lastSoundTime > soundInterval) {
                     let osc = particleOscillators[i];
                     let freq = random(100, 8000) + speed * 3000;
                     osc.freq(freq);
                     
-                    // BINAURAL 360 - panning entre izquierda y derecha
                     let panValue = map(p.pos.x, -cubeSize / 2, cubeSize / 2, -1, 1);
                     osc.pan(panValue);
                     
-                    osc.amp(0.15, 0.001); 
+                    osc.amp(0.05, 0.001);
                     setTimeout(() => osc.amp(0, 0.1), random(10, 5)); 
 
                     p.highlight();  
                     lastSoundTime = millis();  
                 }
 
-                // LÍNEAS MÁS NOTABLES
                 for (let j = i + 1; j < particleCount; j++) {
                     let d = dist(p.pos.x, p.pos.y, p.pos.z, particles[j].pos.x, particles[j].pos.y, particles[j].pos.z);
                     if (d < 90) {  
