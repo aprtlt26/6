@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="viewport" content="width=device-width, initial-scale=1.0">
-    <title>aprtlt®grnlr tELESMA</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>TELESMA | Grabado Real (Sin nubes blancas)</title>
     <style>
         body, html {
             margin: 0;
@@ -13,7 +14,7 @@
             touch-action: none;
         }
         * { cursor: none !important; }
-        canvas { cursor: none !important; }
+        canvas { display: block; cursor: none !important; }
     </style>
 </head>
 <body>
@@ -35,6 +36,9 @@
         let wetness = 0.3;  
         let zTranslation = 0; 
         let particleCount = 150; 
+        
+        // Desvanecimiento lento para que las huellas desaparezcan
+        let fadeAlpha = 8; 
 
         function preload() {
             convolutionReverb = new p5.Convolver('https://p5js.org/assets/sound/examples/convolution-reverb/ir_latenightlong.wav');
@@ -67,15 +71,29 @@
             }
 
             convolutionReverb.drywet(wetness);  
-            background(0);
+            
+            // === FONDO AZUL FIJO ===
+            background(0, 55, 255);
+            
             noLoop();  
         }
 
         function draw() {
             if (!audioStarted) return;
 
-            background(0, 55, 255);
+            // === DESVANECIMIENTO DEL FONDO (Para que las huellas se borren solas) ===
+            // En lugar de limpiar el fondo, dibujamos un rectángulo azul semitransparente
+            // Esto hace que las huellas viejas se desvanezcan lentamente.
+            push();
+            translate(-width/2, -height/2);
+            noStroke();
+            fill(0, 55, 255, fadeAlpha); // Azul del fondo con transparencia
+            rect(0, 0, width, height);
+            pop();
 
+            // ============================================================
+            // MOVIMIENTO 3D Y PARTÍCULAS
+            // ============================================================
             speed = dist(mouseX, mouseY, prevMouseX, prevMouseY) * 0.01;
             prevMouseX = mouseX;
             prevMouseY = mouseY;
@@ -109,6 +127,7 @@
                     lastSoundTime = millis();  
                 }
 
+                // Conexiones entre partículas
                 for (let j = i + 1; j < particleCount; j++) {
                     let d = dist(p.pos.x, p.pos.y, p.pos.z, particles[j].pos.x, particles[j].pos.y, particles[j].pos.z);
                     if (d < 90) {  
@@ -119,8 +138,6 @@
                     }
                 }
             }
-
-            // ELIMINADO EL PUNTO NEGRO DEL MOUSE
         }
 
         function keyPressed() {
@@ -143,6 +160,15 @@
             }
         }
 
+        function touchStarted() {
+            if (!audioStarted) {
+                userStartAudio();
+                audioStarted = true;
+                loop(); 
+            }
+            return false;
+        }
+
         function windowResized() {
             resizeCanvas(windowWidth, windowHeight); 
             document.querySelector('canvas').style.cursor = 'none';
@@ -158,6 +184,8 @@
                 this.vel = p5.Vector.random3D().mult(0.09);
                 this.acc = createVector();
                 this.isHighlighted = false; 
+                this.prevScreenX = 0;
+                this.prevScreenY = 0;
             }
 
             move() {
@@ -180,10 +208,32 @@
                     this.isHighlighted = false;  
                 } else {
                     stroke(255);
-                    strokeWeight(2.5); // PARTÍCULAS MÁS GRANDES
+                    strokeWeight(2.5); 
                 }
 
                 point(0, 0);
+                pop();
+
+                // === GRABADO EN RELIEVE (Sin nubes blancas) ===
+                let screenX = this.pos.x + width / 2;
+                let screenY = this.pos.y + height / 2;
+                
+                push();
+                translate(-width/2, -height/2);
+                noStroke();
+                
+                // 1. SOMBRA (Azul oscuro, desplazada abajo-derecha)
+                fill(0, 30, 180, 80);
+                ellipse(screenX + 2, screenY + 2, 6, 6);
+                
+                // 2. LUZ (Cian brillante, desplazada arriba-izquierda)
+                fill(100, 200, 255, 60);
+                ellipse(screenX - 1, screenY - 1, 5, 5);
+                
+                // 3. CENTRO (El color del fondo, para que el surco se fusione)
+                fill(0, 55, 255, 100);
+                ellipse(screenX, screenY, 4, 4);
+                
                 pop();
             }
 
@@ -191,103 +241,9 @@
                 this.isHighlighted = true;  
             }
         }
-
-        let video;
-        let hands;
-        let handDetected = false;
-        let pinchDistance = 0;
-
-        async function initHandTracking(stream) {
-            video = createCapture(VIDEO);
-            video.size(640, 480);
-            video.hide();
-
-            hands = new Hands({
-                locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-            });
-
-            hands.setOptions({
-                maxNumHands: 1,
-                modelComplexity: 1,
-                minDetectionConfidence: 0.7,
-                minTrackingConfidence: 0.7
-            });
-
-            hands.onResults(onHandResults);
-
-            const camera = new Camera(video.elt, {
-                onFrame: async () => {
-                    await hands.send({ image: video.elt });
-                },
-                width: 640,
-                height: 480
-            });
-            camera.start();
-        }
-        let prevAvgX = null;
-        let prevAvgY = null;
-
-        function onHandResults(results) {
-          handDetected = results.multiHandLandmarks && results.multiHandLandmarks.length > 0;
-
-          if (handDetected) {
-            let landmarks = results.multiHandLandmarks[0];
-
-            let avgX = 0, avgY = 0;
-            for (let lm of landmarks) {
-              avgX += lm.x;
-              avgY += lm.y;
-            }
-            avgX /= landmarks.length;
-            avgY /= landmarks.length;
-
-            if (prevAvgX !== null && prevAvgY !== null) {
-              let deltaX = avgX - prevAvgX;
-              let deltaY = avgY - prevAvgY;
-
-              rotationYValue += deltaX * 15;
-              rotationXValue -= deltaY * 15;
-            }
-            prevAvgX = avgX;
-            prevAvgY = avgY;
-
-            let index = landmarks[8];
-            let pinky = landmarks[20];
-            let angle = atan2(pinky.y - index.y, pinky.x - index.x);
-            rotationZValue = angle * 2.5;
-
-            let thumb = landmarks[4];
-            pinchDistance = dist(thumb.x, thumb.y, index.x, index.y);
-            zTranslation = map(pinchDistance, 0.02, 0.25, 500, -500, true);
-
-            let mappedCount = int(map(pinchDistance, 0.02, 0.25, particles.length, 20, true));
-            let diff = mappedCount - particleCount;
-            particleCount += diff * 0.6;
-            particleCount = constrain(particleCount, 10, particles.length);
-          } else {
-            prevAvgX = null;
-            prevAvgY = null;
-          }
-        }
-
-        navigator.mediaDevices.getUserMedia({ video: true })
-          .then(stream => {
-              console.log("✅ Cámara habilitada");
-              initHandTracking(stream);
-          })
-          .catch(err => {
-              console.error("❌ Acceso a cámara denegado:", err);
-          });
-
     </script>
-
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
-
 </body>
 </html>
-
 
 
 
